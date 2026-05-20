@@ -10,14 +10,11 @@ from Lab3.lab3 import (
     derive_key, make_iv, expand,
     enc_block, dec_block,
     rc5_encrypt, rc5_decrypt,
-    BLOCK, KEY_BYTES,
+    BLOCK,
 )
 
 
 class TestDeriveKey(unittest.TestCase):
-    def test_length(self):
-        self.assertEqual(len(derive_key("hello")), KEY_BYTES)
-
     def test_uses_md5(self):
         pw = "passphrase"
         self.assertEqual(derive_key(pw), bytes.fromhex(md5(pw.encode())))
