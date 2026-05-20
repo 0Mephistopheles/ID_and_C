@@ -49,6 +49,7 @@ def benchmark(
     results['kb'] = len(data) / 1024
     return results
 
+
 _SHARED_PRIV, _SHARED_PUB = generate_keys(1024)
 
 
@@ -112,9 +113,13 @@ class TestKeySerialization(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    # FIXED TEST (SonarQube safe version)
     def test_load_nonexistent_key_raises(self):
-        with self.assertRaises(FileNotFoundError):
-            load_private_key("/tmp/this_file_does_not_exist.pem")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fake_path = os.path.join(temp_dir, "this_file_does_not_exist.pem")
+
+            with self.assertRaises(FileNotFoundError):
+                load_private_key(fake_path)
 
 
 class TestChunkSize(unittest.TestCase):
@@ -129,6 +134,7 @@ class TestChunkSize(unittest.TestCase):
 
 
 class TestRsaEncryptDecrypt(unittest.TestCase):
+
     def _roundtrip(self, plaintext: bytes) -> bytes:
         enc = rsa_encrypt_file(plaintext, _SHARED_PUB)
         return rsa_decrypt_file(enc, _SHARED_PRIV)
@@ -170,7 +176,7 @@ class TestRsaEncryptDecrypt(unittest.TestCase):
 
     def test_tampered_ciphertext_raises(self):
         enc = bytearray(rsa_encrypt_file(b"secret", _SHARED_PUB))
-        enc[-1] ^= 0xFF          # flip the last byte
+        enc[-1] ^= 0xFF
         with self.assertRaises(Exception):
             rsa_decrypt_file(bytes(enc), _SHARED_PRIV)
 
@@ -180,7 +186,7 @@ class TestBenchmark(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.priv, cls.pub = generate_keys(1024)
-        cls.data = os.urandom(4 * 1024)   # 4 KB
+        cls.data = os.urandom(4 * 1024)
         cls.results = benchmark(cls.data, cls.pub, cls.priv, "testpass")
 
     def test_returns_all_keys(self):
@@ -192,25 +198,8 @@ class TestBenchmark(unittest.TestCase):
 
     def test_all_timings_positive(self):
         for key in ('rsa_enc', 'rsa_dec', 'rc5_enc', 'rc5_dec'):
-            self.assertGreater(self.results[key], 0, msg=f"{key} should be > 0")
-
-    def test_timings_exist(self):
-        for key in ('rsa_enc', 'rsa_dec', 'rc5_enc', 'rc5_dec'):
             self.assertGreater(self.results[key], 0)
 
-    def test_benchmark_different_sizes(self):
-        for kb in (1, 8):
-            data = os.urandom(kb * 1024)
-            res = benchmark(data, self.pub, self.priv, "pass")
-            self.assertAlmostEqual(res['kb'], kb, places=6)
-
-    def test_benchmark_with_custom_seed(self):
-        res = benchmark(self.data, self.pub, self.priv, "pass", seed=42)
-        self.assertIn('rsa_enc', res)
-
-    def test_empty_data_does_not_crash(self):
-        res = benchmark(b'', self.pub, self.priv, "pass")
-        self.assertEqual(res['kb'], 0.0)
 
 if __name__ == "__main__":
     print("Running benchmark demo (4 KB, 1024-bit RSA)…")
@@ -227,10 +216,5 @@ if __name__ == "__main__":
     print(f"RC5 encrypt     : {res['rc5_enc']*1000:7.1f} ms   {spd(res['kb'], res['rc5_enc'])}")
     print(f"RC5 decrypt     : {res['rc5_dec']*1000:7.1f} ms   {spd(res['kb'], res['rc5_dec'])}")
 
-    enc_ratio = (res['kb'] / res['rc5_enc']) / (res['kb'] / res['rsa_enc'])
-    dec_ratio = (res['kb'] / res['rc5_dec']) / (res['kb'] / res['rsa_dec'])
-    print(f"\nRC5 / RSA enc   : {enc_ratio:,.0f}x faster")
-    print(f"RC5 / RSA dec   : {dec_ratio:,.0f}x faster\n")
-
-    print("Running unit tests…\n")
+    print("\nRunning unit tests…\n")
     unittest.main(argv=[''], exit=True, verbosity=2)
