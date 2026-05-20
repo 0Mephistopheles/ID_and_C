@@ -14,15 +14,18 @@ numbers = []
 def lcg(n, seed=SEED, a=A, c=C, m=M):
     nums = []
     x = seed
+
     for _ in range(n):
         x = (a * x + c) % m
         nums.append(x)
+
     return nums
 
 
 def gcd(a, b):
     while b:
         a, b = b, a % b
+
     return a
 
 
@@ -46,6 +49,7 @@ def cesaro_test(nums):
     for i in range(0, len(nums) - 1, 2):
         if gcd(nums[i], nums[i + 1]) == 1:
             coprime += 1
+
         total += 1
 
     if total == 0 or coprime == 0:
@@ -62,15 +66,21 @@ def system_test(n):
 
 def generate(entry, text):
     global numbers
+
     try:
         n = int(entry.get())
-    except:
+    except ValueError:
         messagebox.showerror("Помилка", "Введіть число")
+        return
+
+    if n <= 0:
+        messagebox.showerror("Помилка", "Число повинно бути більше 0")
         return
 
     numbers = lcg(n)
 
     text.delete(1.0, tk.END)
+
     for num in numbers:
         text.insert(tk.END, str(num) + "\n")
 
@@ -106,6 +116,7 @@ def test_cesaro():
         f"π (System) ≈ {pi_sys}\n"
         f"Реальне π = {math.pi}"
     )
+
     messagebox.showinfo("Тест Чезаро", msg)
 
 
@@ -122,10 +133,29 @@ def run_gui():
     text = tk.Text(root, height=20, width=60)
     text.pack()
 
-    tk.Button(root, text="Генерувати", command=lambda: generate(entry, text)).pack(pady=5)
-    tk.Button(root, text="Зберегти у файл", command=save).pack(pady=5)
-    tk.Button(root, text="Знайти період", command=show_period).pack(pady=5)
-    tk.Button(root, text="Тест Чезаро", command=test_cesaro).pack(pady=5)
+    tk.Button(
+        root,
+        text="Генерувати",
+        command=lambda: generate(entry, text)
+    ).pack(pady=5)
+
+    tk.Button(
+        root,
+        text="Зберегти у файл",
+        command=save
+    ).pack(pady=5)
+
+    tk.Button(
+        root,
+        text="Знайти період",
+        command=show_period
+    ).pack(pady=5)
+
+    tk.Button(
+        root,
+        text="Тест Чезаро",
+        command=test_cesaro
+    ).pack(pady=5)
 
     root.mainloop()
 
